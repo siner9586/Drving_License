@@ -1,0 +1,942 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  STUDENT
+  MERCHANT
+  OPERATOR
+  ADMIN
+}
+
+enum RegionType {
+  PROVINCE
+  CITY
+}
+
+enum SchoolStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  REJECTED
+}
+
+enum BaseLevel {
+  A
+  B
+  C
+}
+
+enum BaseStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  FULL
+  SUSPENDED
+}
+
+enum BedGender {
+  MALE
+  FEMALE
+  FLEXIBLE
+}
+
+enum BedStatus {
+  AVAILABLE
+  OCCUPIED
+  RESERVED
+  MAINTENANCE
+}
+
+enum VehicleStatus {
+  AVAILABLE
+  IN_TRAINING
+  MAINTENANCE
+  RETIRED
+}
+
+enum PackageStatus {
+  ACTIVE
+  PAUSED
+  SOLD_OUT
+  ARCHIVED
+}
+
+enum SessionStatus {
+  OPEN
+  FULL
+  CLOSED
+  CANCELLED
+}
+
+enum ApplicationStatus {
+  SUBMITTED
+  RISK_REVIEW
+  CONFIRMED
+  REJECTED
+  CONVERTED
+}
+
+enum OrderStatus {
+  PENDING_MATERIALS
+  PENDING_BASE_CONFIRM
+  PENDING_DEPOSIT
+  DEPOSIT_PAID
+  WAITING_CHECKIN
+  CHECKED_IN
+  STAYED_IN
+  TRAINING
+  EXAMING
+  COMPLETED
+  REFUNDING
+  REFUNDED
+  COMPLAINT
+  CLOSED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PARTIAL
+  PAID
+  REFUNDED
+  CLOSED
+}
+
+enum CheckinStatus {
+  NOT_ARRIVED
+  PENDING
+  CHECKED_IN
+  CANCELLED
+}
+
+enum ProgressStatus {
+  MATERIAL_REVIEW
+  BASE_CONFIRM
+  CHECKIN
+  STAY
+  THEORY
+  FIELD_TRAINING
+  ROAD_TRAINING
+  EXAM_BOOKING
+  COMPLETED
+}
+
+enum OrderItemType {
+  TRAINING
+  DORMITORY
+  MEAL
+  PICKUP
+  INSURANCE
+  SERVICE
+}
+
+enum PaymentProvider {
+  MOCK
+  WECHAT
+  ALIPAY
+  BANK
+}
+
+enum PaymentRecordStatus {
+  CREATED
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum StayStatus {
+  RESERVED
+  CHECKED_IN
+  CHECKED_OUT
+  CANCELLED
+}
+
+enum ServiceStatus {
+  PENDING
+  ACTIVE
+  FINISHED
+  CANCELLED
+}
+
+enum WarningLevel {
+  NORMAL
+  WATCH
+  WARNING
+  FULL
+}
+
+enum ReviewStatus {
+  PUBLISHED
+  RISK_REVIEW
+  HIDDEN
+}
+
+enum ComplaintSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ComplaintStatus {
+  SUBMITTED
+  PROCESSING
+  ARBITRATING
+  RESOLVED
+  CLOSED
+}
+
+enum RefundStatus {
+  SUBMITTED
+  REVIEWING
+  APPROVED
+  REJECTED
+  PAID
+  CLOSED
+}
+
+enum FranchiseStatus {
+  SUBMITTED
+  RISK_REVIEW
+  MATERIAL_REQUIRED
+  PRE_REVIEW
+  TRIAL
+  APPROVED
+  REJECTED
+}
+
+enum AuditStage {
+  MATERIAL
+  FIELD_CHECK
+  SAFETY
+  FINANCE
+  TRIAL
+  FINAL
+}
+
+enum AuditStatus {
+  PENDING
+  PASSED
+  NEED_MORE
+  REJECTED
+}
+
+enum ContractType {
+  TRAINING
+  DORMITORY
+  MEAL
+  PLATFORM
+}
+
+enum RuleType {
+  USER_AGREEMENT
+  TRANSACTION
+  ENROLLMENT
+  REFUND
+  COMPLAINT
+  REVIEW
+  PROHIBITED
+  FRANCHISE
+  SAFETY
+  PRIVACY
+}
+
+enum RiskSourceType {
+  APPLICATION
+  FRANCHISE
+  PACKAGE
+  REVIEW
+  COMPLAINT
+  REFUND
+  BACKOFFICE
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum RiskStatus {
+  OPEN
+  MARKED
+  BLOCKED
+  RESOLVED
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  PROPOSAL
+  WON
+  LOST
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String   @unique
+  email     String?  @unique
+  role      UserRole @default(STUDENT)
+  province  String?
+  city      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders    Order[]
+  reviews   Review[]
+  complaints Complaint[]
+  refunds   Refund[]
+}
+
+model Region {
+  id        String     @id @default(cuid())
+  name      String
+  code      String     @unique
+  type      RegionType
+  parentId  String?
+  parent    Region?    @relation("RegionTree", fields: [parentId], references: [id])
+  children  Region[]   @relation("RegionTree")
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model School {
+  id           String       @id @default(cuid())
+  name         String
+  licenseNo    String
+  filingNo     String
+  province     String
+  city         String
+  address      String
+  contactName  String
+  contactPhone String
+  status       SchoolStatus @default(PENDING)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  bases TrainingBase[]
+}
+
+model TrainingBase {
+  id                          String     @id @default(cuid())
+  schoolId                    String
+  name                        String
+  slug                        String     @unique
+  level                       BaseLevel
+  province                    String
+  city                        String
+  address                     String
+  summary                     String
+  description                 String
+  coverImage                  String?
+  verified                    Boolean    @default(false)
+  status                      BaseStatus @default(DRAFT)
+  trainingFieldArea           Int
+  coachCount                  Int
+  vehicleCount                Int
+  totalBeds                   Int
+  availableBeds               Int
+  canteenCapacity             Int
+  dailyStudentCapacity        Int
+  monthlyStudentCapacity      Int
+  supportsAccommodation       Boolean    @default(false)
+  supportsMeals               Boolean    @default(false)
+  supportsPickup              Boolean    @default(false)
+  supportsFemaleDorm          Boolean    @default(false)
+  supportsEnterpriseTraining  Boolean    @default(false)
+  rating                      Float      @default(0)
+  complaintRate               Float      @default(0)
+  refundRate                  Float      @default(0)
+  createdAt                   DateTime   @default(now())
+  updatedAt                   DateTime   @updatedAt
+
+  school            School              @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  dormitories       BaseDormitory[]
+  canteens          Canteen[]
+  coaches           Coach[]
+  vehicles          Vehicle[]
+  packages          CampPackage[]
+  sessions          CampSession[]
+  applications      Application[]
+  orders            Order[]
+  checkins          StudentCheckin[]
+  capacityCalendar  CapacityCalendar[]
+  reviews           Review[]
+  complaints        Complaint[]
+}
+
+model BaseDormitory {
+  id                  String   @id @default(cuid())
+  baseId              String
+  name                String
+  description         String
+  totalBeds           Int
+  availableBeds       Int
+  hasAirConditioning  Boolean
+  hasPrivateBathroom  Boolean
+  hasHotWater         Boolean
+  hasLaundry          Boolean
+  genderSeparated     Boolean
+  hasAccessControl    Boolean
+  managerOnDuty       Boolean
+  pricePerDay         Float
+  rules               String
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  base     TrainingBase @relation(fields: [baseId], references: [id], onDelete: Cascade)
+  rooms    DormRoom[]
+  beds     DormBed[]
+  stays    StudentStay[]
+}
+
+model DormRoom {
+  id            String   @id @default(cuid())
+  dormitoryId   String
+  roomType      String
+  capacity      Int
+  totalRooms    Int
+  availableRooms Int
+  pricePerDay   Float
+  features      String[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  dormitory BaseDormitory @relation(fields: [dormitoryId], references: [id], onDelete: Cascade)
+  beds      DormBed[]
+  stays     StudentStay[]
+}
+
+model DormBed {
+  id          String    @id @default(cuid())
+  dormitoryId String
+  roomId      String
+  bedNo       String
+  gender      BedGender
+  status      BedStatus @default(AVAILABLE)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  dormitory BaseDormitory @relation(fields: [dormitoryId], references: [id], onDelete: Cascade)
+  room      DormRoom      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  stays     StudentStay[]
+}
+
+model Canteen {
+  id                     String   @id @default(cuid())
+  baseId                 String
+  name                   String
+  description            String
+  dailyCapacity          Int
+  mealCountPerDay        Int
+  supportsHalal          Boolean
+  supportsVegetarian     Boolean
+  supportsEnterpriseMeal Boolean
+  foodSafetyNote         String
+  complaintChannel       String
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  base      TrainingBase @relation(fields: [baseId], references: [id], onDelete: Cascade)
+  mealPlans MealPlan[]
+}
+
+model MealPlan {
+  id          String   @id @default(cuid())
+  canteenId   String
+  name        String
+  pricePerDay Float
+  meals       String[]
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  canteen    Canteen     @relation(fields: [canteenId], references: [id], onDelete: Cascade)
+  mealOrders MealOrder[]
+}
+
+model Coach {
+  id             String   @id @default(cuid())
+  baseId         String
+  name           String
+  gender         String
+  years          Int
+  licenseTypes   String[]
+  tags           String[]
+  rating         Float
+  studentCount   Int
+  complaintCount Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  base TrainingBase @relation(fields: [baseId], references: [id], onDelete: Cascade)
+}
+
+model Vehicle {
+  id           String        @id @default(cuid())
+  baseId       String
+  plateNo      String
+  vehicleType  String
+  trainingType String
+  status       VehicleStatus @default(AVAILABLE)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  base TrainingBase @relation(fields: [baseId], references: [id], onDelete: Cascade)
+}
+
+model CourseCategory {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  packages CampPackage[]
+}
+
+model CampPackage {
+  id                    String        @id @default(cuid())
+  baseId                String
+  categoryId            String
+  name                  String
+  slug                  String        @unique
+  targetUsers           String
+  description           String
+  price                 Float
+  trainingFee           Float
+  dormitoryFee          Float
+  mealFee               Float
+  pickupFee             Float
+  examFeeNote           String
+  includesAccommodation Boolean
+  includesMeals         Boolean
+  supportsPickup        Boolean
+  durationText          String
+  serviceItems          String[]
+  notIncludedItems      String[]
+  refundRule            String
+  complianceNote        String
+  remainingSeats        Int
+  status                PackageStatus @default(ACTIVE)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  base         TrainingBase   @relation(fields: [baseId], references: [id], onDelete: Cascade)
+  category     CourseCategory @relation(fields: [categoryId], references: [id])
+  sessions     CampSession[]
+  applications Application[]
+  orders       Order[]
+}
+
+model CampSession {
+  id             String        @id @default(cuid())
+  packageId      String
+  baseId         String
+  startDate      DateTime
+  endDate        DateTime
+  capacity       Int
+  remainingSeats Int
+  status         SessionStatus @default(OPEN)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  package CampPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  base    TrainingBase @relation(fields: [baseId], references: [id], onDelete: Cascade)
+}
+
+model Application {
+  id                  String            @id @default(cuid())
+  studentName         String
+  phone               String
+  province            String
+  city                String
+  targetLicenseType   String
+  baseId              String?
+  packageId           String?
+  needAccommodation   Boolean
+  needMeals           Boolean
+  needPickup          Boolean
+  expectedArrivalDate DateTime?
+  isEnterprise        Boolean
+  enterpriseName      String?
+  enterpriseSize      Int?
+  note                String?
+  status              ApplicationStatus @default(SUBMITTED)
+  riskFlag            Boolean           @default(false)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  base    TrainingBase? @relation(fields: [baseId], references: [id])
+  package CampPackage?  @relation(fields: [packageId], references: [id])
+  orders  Order[]
+}
+
+model Order {
+  id             String         @id @default(cuid())
+  orderNo        String         @unique
+  userId         String?
+  applicationId  String?
+  baseId         String
+  packageId      String
+  totalAmount    Float
+  paidAmount     Float
+  status         OrderStatus    @default(PENDING_MATERIALS)
+  paymentStatus  PaymentStatus  @default(UNPAID)
+  checkinStatus  CheckinStatus  @default(NOT_ARRIVED)
+  progressStatus ProgressStatus @default(MATERIAL_REVIEW)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  user        User?         @relation(fields: [userId], references: [id])
+  application Application?  @relation(fields: [applicationId], references: [id])
+  base        TrainingBase  @relation(fields: [baseId], references: [id])
+  package     CampPackage   @relation(fields: [packageId], references: [id])
+  items       OrderItem[]
+  payments    Payment[]
+  checkin     StudentCheckin?
+  stays       StudentStay[]
+  meals       MealOrder[]
+  pickup      PickupService?
+  progress    StudentProgress?
+  examProgress ExamProgress[]
+  reviews     Review[]
+  complaints  Complaint[]
+  refunds     Refund[]
+  contracts   Contract[]
+}
+
+model OrderItem {
+  id          String        @id @default(cuid())
+  orderId     String
+  type        OrderItemType
+  name        String
+  amount      Float
+  description String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id        String              @id @default(cuid())
+  orderId   String
+  provider  PaymentProvider     @default(MOCK)
+  amount    Float
+  status    PaymentRecordStatus @default(CREATED)
+  paidAt    DateTime?
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model StudentCheckin {
+  id                 String        @id @default(cuid())
+  orderId            String        @unique
+  baseId             String
+  studentName        String
+  arrivalDate        DateTime?
+  dormitoryAssigned  Boolean
+  mealPlanAssigned   Boolean
+  pickupRequired     Boolean
+  status             CheckinStatus @default(NOT_ARRIVED)
+  note               String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  order Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  base  TrainingBase @relation(fields: [baseId], references: [id])
+}
+
+model StudentStay {
+  id           String     @id @default(cuid())
+  orderId      String
+  dormitoryId  String
+  roomId       String
+  bedId        String
+  checkinDate  DateTime?
+  checkoutDate DateTime?
+  status       StayStatus @default(RESERVED)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  order     Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  dormitory BaseDormitory  @relation(fields: [dormitoryId], references: [id])
+  room      DormRoom       @relation(fields: [roomId], references: [id])
+  bed       DormBed        @relation(fields: [bedId], references: [id])
+}
+
+model MealOrder {
+  id         String        @id @default(cuid())
+  orderId    String
+  mealPlanId String
+  startDate  DateTime?
+  endDate    DateTime?
+  status     ServiceStatus @default(PENDING)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  mealPlan MealPlan @relation(fields: [mealPlanId], references: [id])
+}
+
+model PickupService {
+  id             String        @id @default(cuid())
+  orderId        String        @unique
+  pickupLocation String
+  pickupTime     DateTime?
+  price          Float
+  status         ServiceStatus @default(PENDING)
+  note           String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model CapacityCalendar {
+  id                 String       @id @default(cuid())
+  baseId             String
+  date               DateTime
+  newStudentCapacity Int
+  availableBeds      Int
+  availableVehicles  Int
+  availableCoaches   Int
+  sessionSeats       Int
+  warningLevel       WarningLevel @default(NORMAL)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  base TrainingBase @relation(fields: [baseId], references: [id], onDelete: Cascade)
+
+  @@unique([baseId, date])
+}
+
+model StudentProgress {
+  id                 String         @id @default(cuid())
+  orderId            String         @unique
+  currentStage       ProgressStatus
+  theoryStatus       String
+  fieldTrainingStatus String
+  roadTrainingStatus String
+  examBookingNote    String
+  nextStep           String
+  teacherNote        String
+  managerNote        String
+  updatedBy          String
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model ExamProgress {
+  id          String   @id @default(cuid())
+  orderId     String
+  subject     String
+  status      String
+  bookingDate DateTime?
+  resultNote  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id        String       @id @default(cuid())
+  orderId   String
+  baseId    String
+  userId    String?
+  rating    Int
+  content   String
+  tags      String[]
+  status    ReviewStatus @default(PUBLISHED)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  order Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  base  TrainingBase @relation(fields: [baseId], references: [id])
+  user  User?        @relation(fields: [userId], references: [id])
+}
+
+model Complaint {
+  id         String            @id @default(cuid())
+  orderId    String
+  baseId     String
+  userId     String?
+  type       String
+  severity   ComplaintSeverity
+  content    String
+  status     ComplaintStatus   @default(SUBMITTED)
+  resolution String?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  order Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  base  TrainingBase @relation(fields: [baseId], references: [id])
+  user  User?        @relation(fields: [userId], references: [id])
+}
+
+model Refund {
+  id              String       @id @default(cuid())
+  orderId          String
+  userId           String?
+  reason           String
+  requestedAmount  Float
+  approvedAmount   Float?
+  status           RefundStatus @default(SUBMITTED)
+  note             String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user  User? @relation(fields: [userId], references: [id])
+}
+
+model FranchiseApplication {
+  id                         String          @id @default(cuid())
+  schoolName                 String
+  province                   String
+  city                       String
+  licenseNo                  String
+  filingNo                   String
+  trainingFieldAddress       String
+  trainingFieldArea          Int
+  coachCount                 Int
+  vehicleCount               Int
+  licenseTypes               String[]
+  hasDormitory               Boolean
+  bedCount                   Int
+  hasCanteen                 Boolean
+  canteenCapacity            Int
+  supportsPickup             Boolean
+  supportsFemaleDorm         Boolean
+  safetyDescription          String
+  foodSafetyDescription      String
+  priceDescription           String
+  contractDescription        String
+  refundDescription          String
+  canServeNationalStudents   Boolean
+  contactName                String
+  contactPhone               String
+  status                     FranchiseStatus @default(SUBMITTED)
+  riskFlag                   Boolean         @default(false)
+  createdAt                  DateTime        @default(now())
+  updatedAt                  DateTime        @updatedAt
+
+  audits FranchiseAudit[]
+}
+
+model FranchiseAudit {
+  id            String      @id @default(cuid())
+  applicationId String
+  stage         AuditStage
+  status        AuditStatus @default(PENDING)
+  auditor       String
+  note          String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  application FranchiseApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+}
+
+model Contract {
+  id        String       @id @default(cuid())
+  orderId   String
+  type      ContractType
+  title     String
+  content   String
+  signedAt  DateTime?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model PlatformRule {
+  id        String   @id @default(cuid())
+  type      RuleType
+  title     String
+  content   String
+  version   String
+  published Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RiskEvent {
+  id             String         @id @default(cuid())
+  sourceType     RiskSourceType
+  sourceId       String?
+  keyword        String
+  contentSnippet String
+  riskLevel      RiskLevel
+  status         RiskStatus     @default(OPEN)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actorRole  UserRole
+  action     String
+  targetType String
+  targetId   String
+  detail     String
+  createdAt  DateTime @default(now())
+}
+
+model EnterpriseLead {
+  id                   String     @id @default(cuid())
+  companyName          String
+  contactName          String
+  phone                String
+  province             String
+  city                 String
+  studentCount         Int
+  targetLicenseType    String
+  needAccommodation    Boolean
+  needMeals            Boolean
+  expectedTrainingDate DateTime?
+  note                 String?
+  status               LeadStatus @default(NEW)
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+}
+
+model Banner {
+  id        String   @id @default(cuid())
+  title     String
+  subtitle  String
+  image     String
+  link      String
+  position  String
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Article {
+  id        String   @id @default(cuid())
+  title     String
+  slug      String   @unique
+  category  String
+  summary   String
+  content   String
+  published Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
